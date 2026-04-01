@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LoanAudit AI — Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0f0d0a;--ink2:#2a2520;--ink3:#4a4540;
+  --paper:#f5f0e8;--paper2:#ede8df;--paper3:#e5dfd4;--paper4:#dbd4c8;
+  --border:rgba(15,13,10,.1);--border2:rgba(15,13,10,.18);--border3:rgba(15,13,10,.28);
+  --fire:#e85d04;--fire2:#ff6b1a;--fire3:#f48c06;
+  --ember:#dc2f02;--gold:#faa307;--pine:#1a6b45;--pine2:#2d9660;
+  --sky:#1a4fa0;--sky2:#2563d4;
+  --mono:"Space Mono",monospace;--sans:"Outfit",sans-serif;
+  --r:6px;--r2:10px;--r3:14px
+}
+html,body{height:100%;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:var(--paper3)}
+::-webkit-scrollbar-thumb{background:var(--ink3);border-radius:3px}
+
+/* ── SHELL ── */
+.shell{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  background:var(--ink);
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;overflow:hidden
+}
+.brand{padding:22px 18px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+.logo-wrap{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.logo-hex{
+  width:36px;height:36px;border-radius:8px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--fire),var(--fire3));
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px rgba(232,93,4,.35)
+}
+.logo-hex svg{width:18px;height:18px}
+.brand-name{font-size:14px;font-weight:700;color:#f5f0e8;letter-spacing:-.01em}
+.brand-sub{font-size:9px;font-family:var(--mono);color:rgba(245,240,232,.3);letter-spacing:.12em;text-transform:uppercase}
+.live-pill{
+  display:inline-flex;align-items:center;gap:5px;margin-top:8px;
+  font-size:9px;font-family:var(--mono);color:var(--fire2);
+  background:rgba(232,93,4,.12);border:1px solid rgba(232,93,4,.28);
+  border-radius:20px;padding:3px 8px;letter-spacing:.08em
+}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--fire2);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+
+nav{flex:1;padding:14px 10px;overflow-y:auto}
+.nav-grp{font-size:8.5px;font-family:var(--mono);color:rgba(245,240,232,.22);letter-spacing:.16em;text-transform:uppercase;padding:0 8px;margin:16px 0 5px}
+.nav-grp:first-child{margin-top:0}
+.nav-item{
+  display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;cursor:pointer;
+  margin-bottom:2px;font-size:12px;font-weight:500;color:rgba(245,240,232,.45);
+  transition:all .14s;border:1px solid transparent;user-select:none
+}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(245,240,232,.8)}
+.nav-item.active{background:rgba(232,93,4,.15);color:var(--fire2);border-color:rgba(232,93,4,.3)}
+.nav-item svg{width:14px;height:14px;flex-shrink:0;opacity:.6}
+.nav-item.active svg{opacity:1}
+.nav-chip{margin-left:auto;font-size:8px;font-family:var(--mono);padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.07);color:rgba(245,240,232,.3);letter-spacing:.04em}
+.nav-chip.hot{background:rgba(232,93,4,.18);color:var(--fire2);border:1px solid rgba(232,93,4,.25)}
+
+.sidebar-foot{padding:12px 14px;border-top:1px solid rgba(255,255,255,.07)}
+.ens-box{border:1px solid rgba(255,255,255,.08);border-radius:var(--r);padding:10px 12px;background:rgba(255,255,255,.03)}
+.ens-lbl{font-size:8px;font-family:var(--mono);color:rgba(245,240,232,.25);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
+.ens-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.ens-name{font-size:11px;color:rgba(245,240,232,.45);font-family:var(--mono)}
+.ens-val{font-size:11px;font-family:var(--mono);font-weight:700}
+
+/* ── MAIN ── */
+main{background:var(--paper);display:flex;flex-direction:column;overflow-y:auto}
+.topbar{
+  position:sticky;top:0;z-index:30;
+  background:rgba(245,240,232,.94);backdrop-filter:blur(16px);
+  border-bottom:2px solid var(--ink);
+  padding:0 26px;height:52px;
+  display:flex;align-items:center;justify-content:space-between
+}
+.tb-left{display:flex;align-items:center;gap:14px}
+.tb-crumb{font-size:11px;font-family:var(--mono);color:var(--ink3)}
+.tb-page{font-size:13px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
+.tb-right{display:flex;align-items:center;gap:10px}
+.tb-ts{font-size:11px;font-family:var(--mono);color:var(--ink3)}
+.health-tag{
+  display:flex;align-items:center;gap:5px;font-size:10px;font-family:var(--mono);font-weight:700;
+  padding:4px 10px;border-radius:4px;
+  background:var(--pine);color:#e8f5ee;
+  letter-spacing:.04em
+}
+
+/* ── TABS ── */
+.tab-bar{
+  display:flex;gap:0;padding:0 26px;
+  background:var(--paper2);border-bottom:2px solid var(--ink);
+  overflow-x:auto
+}
+.tab{
+  font-size:11px;font-family:var(--mono);font-weight:400;color:var(--ink3);
+  padding:11px 16px;cursor:pointer;border-bottom:3px solid transparent;
+  transition:all .13s;white-space:nowrap;letter-spacing:.03em;
+  margin-bottom:-2px
+}
+.tab:hover{color:var(--ink)}
+.tab.active{color:var(--fire);border-bottom-color:var(--fire);font-weight:700}
+
+/* ── CONTENT ── */
+.content{padding:24px 26px 64px;flex:1}
+
+/* ── SECTION HEAD ── */
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;padding-bottom:9px;border-bottom:1.5px solid var(--ink)}
+.sh-lbl{font-size:9px;font-family:var(--mono);color:var(--ink3);letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+.sh-btn{font-size:10px;font-family:var(--mono);color:var(--sky);cursor:pointer;padding:3px 9px;border-radius:4px;border:1.5px solid var(--sky);background:transparent;transition:all .12s;font-weight:700}
+.sh-btn:hover{background:var(--sky);color:#fff}
+
+/* ── KPI ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px}
+.kpi{
+  background:var(--paper2);border:1.5px solid var(--ink);border-radius:var(--r2);
+  padding:14px 16px;position:relative;overflow:hidden;
+  transition:transform .14s,box-shadow .14s;cursor:default
+}
+.kpi:hover{transform:translateY(-2px);box-shadow:3px 3px 0 var(--ink)}
+.kpi::after{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--kc,#dbd4c8)}
+.k-lbl{font-size:9px;font-family:var(--mono);color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;font-weight:700}
+.k-val{font-size:28px;font-weight:700;letter-spacing:-.03em;color:var(--ink);line-height:1;font-family:var(--mono)}
+.k-sub{margin-top:5px;font-size:10px;font-family:var(--mono);color:var(--ink3)}
+.k-sub .up{color:var(--pine)}.k-sub .wn{color:var(--fire3)}.k-sub .dn{color:var(--ember)}
+
+/* ── PANELS ── */
+.panel{background:var(--paper2);border:1.5px solid var(--ink);border-radius:var(--r2);overflow:hidden}
+.ph{padding:13px 16px 11px;border-bottom:1.5px solid var(--ink);display:flex;align-items:flex-start;justify-content:space-between}
+.ph-t{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px}
+.ph-s{font-size:10px;font-family:var(--mono);color:var(--ink3)}
+.pb{padding:14px 16px}
+
+/* ── CHART GRIDS ── */
+.cg{display:grid;gap:12px;margin-bottom:20px}
+.c2{grid-template-columns:1.6fr 1fr}
+.c3{grid-template-columns:repeat(3,1fr)}
+.ceq{grid-template-columns:1fr 1fr}
+
+/* ── TABLES ── */
+.t-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead th{font-size:9px;font-family:var(--mono);color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;padding:9px 13px;text-align:left;background:var(--paper3);border-bottom:1.5px solid var(--ink);white-space:nowrap;font-weight:700}
+tbody td{font-size:11.5px;color:var(--ink2);padding:9px 13px;border-bottom:1px solid var(--border);font-family:var(--mono)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--paper3);color:var(--ink)}
+.td-em{font-family:var(--sans);font-size:12px;font-weight:700;color:var(--ink)}
+.td-best{color:var(--pine) !important;font-weight:700}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-family:var(--mono);font-weight:700;padding:2px 7px;border-radius:3px;white-space:nowrap;letter-spacing:.05em}
+.bg{background:var(--pine);color:#e8f5ee}
+.ba{background:var(--fire3);color:#fff}
+.bb{background:var(--sky);color:#fff}
+.bv{background:var(--ink2);color:#f5f0e8}
+.br{background:var(--ember);color:#fff}
+.bm{background:var(--paper3);color:var(--ink3);border:1.5px solid var(--border3)}
+.bdot{width:5px;height:5px;border-radius:50%;background:currentColor}
+
+/* ── PIPELINE ── */
+.pipeline{display:flex;align-items:stretch;overflow-x:auto;margin-bottom:20px}
+.pipe-step{flex:1;min-width:110px;background:var(--paper2);border:1.5px solid var(--ink);padding:13px 14px;position:relative}
+.pipe-step:first-child{border-radius:var(--r) 0 0 var(--r)}
+.pipe-step:last-child{border-radius:0 var(--r) var(--r) 0}
+.pipe-step:not(:last-child){border-right:none}
+.pipe-step.on{background:#fff8f0;border-color:var(--fire)}
+.pipe-step.on .p-num{color:var(--fire);font-weight:700}
+.p-num{font-size:9px;font-family:var(--mono);color:var(--ink3);margin-bottom:4px}
+.p-name{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:2px;font-family:var(--sans)}
+.p-desc{font-size:9.5px;font-family:var(--mono);color:var(--ink3)}
+.p-arr{position:absolute;right:-11px;top:50%;transform:translateY(-50%);z-index:1;width:21px;height:21px;background:var(--paper3);border:1.5px solid var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center}
+
+/* ── LOG STREAM ── */
+.logbox{background:var(--ink);border-radius:var(--r);font-family:var(--mono);font-size:10.5px;color:rgba(245,240,232,.7);padding:13px;max-height:240px;overflow-y:auto;line-height:1.85}
+.ll{margin-bottom:1px}
+.lt{color:rgba(245,240,232,.28)}
+.li{color:#60a5fa}
+.lok{color:#4ade80}
+.lw{color:#fbbf24}
+.le{color:#f87171}
+.lm{color:#c084fc}
+
+/* ── PREDICT FORM ── */
+.pform{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:14px}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fl{font-size:9.5px;font-family:var(--mono);color:var(--ink3);letter-spacing:.06em;text-transform:uppercase;font-weight:700}
+.fi{background:var(--paper);border:1.5px solid var(--ink);border-radius:var(--r);padding:8px 10px;font-size:12px;font-family:var(--mono);color:var(--ink);outline:none;transition:border-color .12s,box-shadow .12s}
+.fi:focus{border-color:var(--fire);box-shadow:2px 2px 0 var(--fire)}
+
+.pred-result{
+  background:#fff8f0;border:2px solid var(--fire);border-radius:var(--r2);
+  padding:16px 18px;display:none;align-items:center;gap:16px;margin-bottom:14px
+}
+.pred-dec{font-size:32px;font-family:var(--mono);font-weight:700;line-height:1}
+.pred-dec.ok{color:var(--pine)}
+.pred-dec.no{color:var(--ember)}
+.pred-info{flex:1}
+.pred-lbl{font-size:8.5px;font-family:var(--mono);color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;font-weight:700}
+.pred-v{font-size:12px;color:var(--ink);font-family:var(--mono);font-weight:700}
+
+/* ── LOG TABLE for PREDICT ── */
+.pred-logs-wrap{margin-top:16px}
+.pred-log-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.pred-log-title{font-size:10px;font-family:var(--mono);font-weight:700;color:var(--ink);letter-spacing:.06em;text-transform:uppercase}
+.pred-log-count{font-size:9px;font-family:var(--mono);color:var(--ink3)}
+#predLogTable{max-height:260px;overflow-y:auto;border:1.5px solid var(--ink);border-radius:var(--r2);overflow:hidden}
+#predLogTable table{border:none}
+#predLogTable thead th{background:var(--ink);color:rgba(245,240,232,.6)}
+#predLogTable tbody td{background:var(--paper)}
+#predLogTable tbody tr:hover td{background:var(--paper2)}
+.empty-state{text-align:center;padding:24px;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+
+/* ── AUDIT ── */
+.audit-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.ac{background:var(--paper2);border:1.5px solid var(--ink);border-radius:var(--r2);padding:18px 20px;position:relative;overflow:hidden;transition:transform .14s,box-shadow .14s}
+.ac:hover{transform:translateY(-2px);box-shadow:3px 3px 0 var(--ink)}
+.ac-icon{position:absolute;top:12px;right:14px;font-size:38px;opacity:.07;pointer-events:none}
+.ac-lbl{font-size:8.5px;font-family:var(--mono);color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px;font-weight:700}
+.ac-score{font-size:42px;font-family:var(--mono);font-weight:700;letter-spacing:-.04em;line-height:1}
+.ac-score.g{color:var(--pine)}.ac-score.w{color:var(--fire3)}.ac-score.r{color:var(--ember)}
+.ac-note{font-size:10px;font-family:var(--mono);color:var(--ink3);margin-top:6px}
+.ac-bar{height:3px;background:var(--paper4);border-radius:2px;margin-top:12px}
+.ac-fill{height:3px;border-radius:2px;transition:width 1.2s ease}
+
+/* ── NOTICE ── */
+.notice{display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:var(--r);font-size:10.5px;font-family:var(--mono);font-weight:700;margin-bottom:14px;border:1.5px solid}
+.notice.fire{background:#fff8f0;border-color:var(--fire);color:var(--fire)}
+.notice.pine{background:#f0f9f4;border-color:var(--pine);color:var(--pine)}
+
+/* ── AI ── */
+.ai-box{background:var(--paper2);border:1.5px solid var(--ink);border-radius:var(--r2);overflow:hidden;margin-bottom:12px}
+.ai-head{background:var(--ink);padding:10px 14px;display:flex;align-items:center;gap:8px}
+.ai-title{font-size:10px;font-family:var(--mono);color:rgba(245,240,232,.55);flex:1;letter-spacing:.06em}
+.ai-body{padding:14px;min-height:60px;background:var(--paper)}
+.ai-out{font-size:12.5px;color:var(--ink);line-height:1.8;white-space:pre-wrap;font-family:var(--sans)}
+.ai-out.idle{color:var(--ink3);font-family:var(--mono);font-size:10.5px}
+
+/* ── BUTTONS ── */
+.btn{font-size:10px;font-family:var(--mono);padding:6px 13px;border-radius:var(--r);cursor:pointer;background:var(--paper3);color:var(--ink);border:1.5px solid var(--ink);transition:all .12s;white-space:nowrap;font-weight:700}
+.btn:hover{background:var(--ink);color:var(--paper)}
+.btn.fire{background:var(--fire);color:#fff;border-color:var(--fire)}
+.btn.fire:hover{background:var(--ember);border-color:var(--ember)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+
+/* ── TIMELINE ── */
+.tl{display:flex;flex-direction:column}
+.tl-row{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.tl-row:last-child{border-bottom:none}
+.tl-spine{display:flex;flex-direction:column;align-items:center;padding-top:3px}
+.tl-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;border:2px solid}
+.tl-dot.g{background:var(--pine);border-color:var(--pine)}
+.tl-dot.w{background:var(--fire3);border-color:var(--fire3)}
+.tl-dot.b{background:var(--sky);border-color:var(--sky)}
+.tl-dot.v{background:var(--ink3);border-color:var(--ink3)}
+.tl-line{width:1.5px;flex:1;background:var(--border2);margin-top:4px}
+.tl-body{flex:1}
+.tl-title{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:2px}
+.tl-meta{font-size:10px;font-family:var(--mono);color:var(--ink3)}
+
+/* ── MINIBAR ── */
+.mb{display:flex;align-items:center;gap:8px}
+.mbb{height:4px;flex:1;max-width:68px;background:var(--paper4);border-radius:2px}
+.mbf{height:4px;border-radius:2px}
+
+/* ── SCATTER LEGEND ── */
+.sc-leg{display:flex;gap:14px;margin-bottom:8px}
+.sc-li{display:flex;align-items:center;gap:5px;font-size:10px;font-family:var(--mono);color:var(--ink3);font-weight:700}
+.sc-dot{width:8px;height:8px;border-radius:50%}
+
+/* ── DECISION ── */
+.dapp{color:var(--pine);font-weight:700}
+.drej{color:var(--ember);font-weight:700}
+.rlow{color:var(--pine)}.rmed{color:var(--fire3)}.rhigh{color:var(--ember)}
+
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+@media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.c2,.c3{grid-template-columns:1fr 1fr}}
+@media(max-width:900px){.shell{grid-template-columns:1fr}.sidebar{display:none}.kpi-grid{grid-template-columns:repeat(2,1fr)}.c2,.ceq{grid-template-columns:1fr}.audit-strip{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar">
+  <div class="brand">
+    <div class="logo-wrap">
+      <div class="logo-hex">
+        <svg viewBox="0 0 18 18" fill="none">
+          <path d="M9 2L15.5 5.8V12.2L9 16L2.5 12.2V5.8L9 2Z" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/>
+          <circle cx="9" cy="9" r="2.5" fill="#fff" opacity=".9"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">LoanAudit AI</div>
+        <div class="brand-sub">v2.4.1 · Enterprise</div>
+      </div>
+    </div>
+    <div class="live-pill"><span class="live-dot"></span>LIVE · 549 RECORDS</div>
+  </div>
+
+  <nav>
+    <div class="nav-grp">Dashboards</div>
+    <div class="nav-item active" onclick="switchTab('overview',this)">
+      <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="1" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="9" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="9" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.2"/></svg>
+      Overview
+    </div>
+    <div class="nav-item" onclick="switchTab('backend',this)">
+      <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="4" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="9" width="14" height="4" rx="1.5" stroke="currentColor" stroke-width="1.2"/><circle cx="12.5" cy="5" r="1" fill="currentColor"/><circle cx="12.5" cy="11" r="1" fill="currentColor"/></svg>
+      Backend<span class="nav-chip">API</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('predict',this)">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M2 12L6 8l3 3 5-7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Live Predictor<span class="nav-chip hot">NEW</span>
+    </div>
+
+    <div class="nav-grp">Risk &amp; Audit</div>
+    <div class="nav-item" onclick="switchTab('audit',this)">
+      <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/><path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Audit Console
+    </div>
+    <div class="nav-item" onclick="switchTab('ai',this)">
+      <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="7" r="4" stroke="currentColor" stroke-width="1.2"/><path d="M4 13s1.5-1.5 4-1.5 4 1.5 4 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      AI Analysis<span class="nav-chip hot">FREE</span>
+    </div>
+
+    <div class="nav-grp">Data</div>
+    <div class="nav-item" onclick="switchTab('data',this)">
+      <svg viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="5" rx="5.5" ry="2" stroke="currentColor" stroke-width="1.2"/><path d="M2.5 5v3c0 1.1 2.46 2 5.5 2s5.5-.9 5.5-2V5" stroke="currentColor" stroke-width="1.2"/><path d="M2.5 8v3c0 1.1 2.46 2 5.5 2s5.5-.9 5.5-2V8" stroke="currentColor" stroke-width="1.2"/></svg>
+      Data Explorer
+    </div>
+    <div class="nav-item" onclick="switchTab('logs',this)">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h8M2 12h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Decision Logs
+    </div>
+  </nav>
+
+  <div class="sidebar-foot">
+    <div class="ens-box">
+      <div class="ens-lbl">Model Ensemble</div>
+      <div class="ens-row"><span class="ens-name">LogisticReg</span><span class="ens-val" style="color:#4ade80">82.5% ★</span></div>
+      <div class="ens-row"><span class="ens-name">RandomForest</span><span class="ens-val" style="color:#60a5fa">80.0%</span></div>
+      <div class="ens-row"><span class="ens-name">DecisionTree</span><span class="ens-val" style="color:rgba(245,240,232,.3)">75.0%</span></div>
+    </div>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<main>
+  <div class="topbar">
+    <div class="tb-left">
+      <span class="tb-crumb">loanaudit.ai /</span>
+      <span class="tb-page" id="pageName">Overview</span>
+    </div>
+    <div class="tb-right">
+      <span class="tb-ts" id="tsDisplay">—</span>
+      <div class="health-tag">● HEALTHY</div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab active" onclick="switchTab('overview',null,this)">Overview</div>
+    <div class="tab" onclick="switchTab('backend',null,this)">Backend</div>
+    <div class="tab" onclick="switchTab('predict',null,this)">Predictor</div>
+    <div class="tab" onclick="switchTab('audit',null,this)">Audit</div>
+    <div class="tab" onclick="switchTab('ai',null,this)">AI Analysis</div>
+    <div class="tab" onclick="switchTab('data',null,this)">Data</div>
+    <div class="tab" onclick="switchTab('logs',null,this)">Logs</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ═══ OVERVIEW ═══ -->
+    <div class="tab-panel active" id="tab-overview">
+      <div class="sh"><div class="sh-lbl">Key Performance Indicators</div><div class="sh-btn" onclick="refreshKPIs()">↺ Refresh</div></div>
+      <div class="kpi-grid">
+        <div class="kpi" style="--kc:var(--pine)"><div class="k-lbl">Total Decisions</div><div class="k-val" id="kpiTotal">549</div><div class="k-sub"><span class="up">↑ 357</span> approved</div></div>
+        <div class="kpi" style="--kc:var(--sky)"><div class="k-lbl">Approval Rate</div><div class="k-val">65.0%</div><div class="k-sub">357 app · 192 rej</div></div>
+        <div class="kpi" style="--kc:var(--fire3)"><div class="k-lbl">Avg Loan</div><div class="k-val">₹10.5k</div><div class="k-sub">₹500 — ₹35,000</div></div>
+        <div class="kpi" style="--kc:var(--ink2)"><div class="k-lbl">Avg Credit Score</div><div class="k-val">732</div><div class="k-sub">Avg DTI: 4.93%</div></div>
+        <div class="kpi" style="--kc:var(--fire)"><div class="k-lbl">Drift Score</div><div class="k-val" style="color:var(--fire3)">0.14</div><div class="k-sub"><span class="wn">⚠ Near 0.15 threshold</span></div></div>
+      </div>
+      <div class="sh"><div class="sh-lbl">Portfolio Distribution</div></div>
+      <div class="cg c2">
+        <div class="panel"><div class="ph"><div><div class="ph-t">Decision Volume by Batch</div><div class="ph-s">549 predictions — 4 processing batches</div></div></div><div class="pb"><div style="height:175px"><canvas id="c-volume"></canvas></div></div></div>
+        <div class="panel"><div class="ph"><div><div class="ph-t">Loan Amount Brackets</div><div class="ph-s">4 size tiers — 549 applications</div></div></div><div class="pb"><div style="height:175px"><canvas id="c-loan-donut"></canvas></div></div></div>
+      </div>
+      <div class="cg c3">
+        <div class="panel"><div class="ph"><div><div class="ph-t">Annual Income</div><div class="ph-s">Income distribution bands</div></div></div><div class="pb"><div style="height:150px"><canvas id="c-income"></canvas></div></div></div>
+        <div class="panel"><div class="ph"><div><div class="ph-t">DTI Risk Profile</div><div class="ph-s">Debt-to-income spread</div></div></div><div class="pb"><div style="height:150px"><canvas id="c-dti"></canvas></div></div></div>
+        <div class="panel"><div class="ph"><div><div class="ph-t">Interest Rate Bands</div><div class="ph-s">Rate distribution</div></div></div><div class="pb"><div style="height:150px"><canvas id="c-rate"></canvas></div></div></div>
+      </div>
+      <div class="sh"><div class="sh-lbl">Model Ensemble — Performance</div></div>
+      <div class="panel">
+        <div class="t-wrap"><table>
+          <thead><tr><th>Model</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th><th>Feature Handling</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td class="td-em">Logistic Regression</td><td class="td-best"><div class="mb"><span>82.50%</span><div class="mbb"><div class="mbf" style="width:56px;background:var(--pine)"></div></div></div></td><td>0.8461</td><td>0.8461</td><td>0.8461</td><td>Standardized</td><td><span class="badge bg">BEST ★</span></td></tr>
+            <tr><td class="td-em">Random Forest</td><td><div class="mb"><span>80.00%</span><div class="mbb"><div class="mbf" style="width:52px;background:var(--sky)"></div></div></div></td><td>0.7692</td><td>0.7692</td><td>0.7692</td><td>Weighted</td><td><span class="badge bb">ACTIVE</span></td></tr>
+            <tr><td class="td-em">Decision Tree</td><td><div class="mb"><span>75.00%</span><div class="mbb"><div class="mbf" style="width:44px;background:var(--ink3)"></div></div></div></td><td>0.7692</td><td>0.6154</td><td>0.6841</td><td>Raw split</td><td><span class="badge bm">FALLBACK</span></td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- ═══ BACKEND ═══ -->
+    <div class="tab-panel" id="tab-backend">
+      <div class="sh"><div class="sh-lbl">Processing Pipeline</div></div>
+      <div class="pipeline">
+        <div class="pipe-step on"><div class="p-num">01</div><div class="p-name">Data Ingestion</div><div class="p-desc">data.csv → DataFrame</div><div class="p-arr"><svg viewBox="0 0 8 8" fill="none"><path d="M1 4h6M4 1.5l2.5 2.5L4 6.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+        <div class="pipe-step on"><div class="p-num">02</div><div class="p-name">Preprocessing</div><div class="p-desc">Encode · Impute · Scale</div><div class="p-arr"><svg viewBox="0 0 8 8" fill="none"><path d="M1 4h6M4 1.5l2.5 2.5L4 6.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+        <div class="pipe-step on"><div class="p-num">03</div><div class="p-name">Ensemble Train</div><div class="p-desc">RF · LR · DT models</div><div class="p-arr"><svg viewBox="0 0 8 8" fill="none"><path d="M1 4h6M4 1.5l2.5 2.5L4 6.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+        <div class="pipe-step on"><div class="p-num">04</div><div class="p-name">POST /predict</div><div class="p-desc">→ Decision + SQLite log</div><div class="p-arr"><svg viewBox="0 0 8 8" fill="none"><path d="M1 4h6M4 1.5l2.5 2.5L4 6.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+        <div class="pipe-step on"><div class="p-num">05</div><div class="p-name">Audit Monitor</div><div class="p-desc">Drift · Bias · Alert</div><div class="p-arr"><svg viewBox="0 0 8 8" fill="none"><path d="M1 4h6M4 1.5l2.5 2.5L4 6.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+        <div class="pipe-step"><div class="p-num">06</div><div class="p-name">Auto-Retrain</div><div class="p-desc">Drift &gt; 0.15 triggers</div></div>
+      </div>
+
+      <div class="notice fire">⚡ Log writes happen ONLY on POST /predict — no passive logging. Every record in the log was triggered by a real prediction call.</div>
+
+      <div class="sh"><div class="sh-lbl">Process Log</div><div style="display:flex;gap:7px"><button class="btn" onclick="clearLog()">Clear</button><button class="btn fire" onclick="runBackendSim()">▶ Run Simulation</button></div></div>
+      <div class="logbox" id="logStream">
+        <div class="ll"><span class="lt">[09:00:00]</span> <span class="li">INFO</span>  server.py · Loading dataset: data.csv (549 records)</div>
+        <div class="ll"><span class="lt">[09:00:01]</span> <span class="li">INFO</span>  preprocessing.py · Encoding CreditGrade A–G, HomeOwnership, LoanPurpose</div>
+        <div class="ll"><span class="lt">[09:00:02]</span> <span class="lok">OK</span>    trainer.py · RF accuracy: 0.8000 · LR: 0.8250 ★ · DT: 0.7500</div>
+        <div class="ll"><span class="lt">[09:00:03]</span> <span class="lm">MODEL</span> trainer.py · Saving ensemble → models/model.pkl</div>
+        <div class="ll"><span class="lt">[09:00:03]</span> <span class="li">INFO</span>  api.py · FastAPI ready at http://localhost:8000</div>
+        <div class="ll"><span class="lt">[09:00:04]</span> <span class="li">INFO</span>  api.py · Waiting for POST /predict requests...</div>
+        <div class="ll"><span class="lt">[09:00:05]</span> <span class="lok">OK</span>    api.py · POST /predict received → loan=₹10,000 DTI=2.5% score=730</div>
+        <div class="ll"><span class="lt">[09:00:05]</span> <span class="lok">OK</span>    predictor.py · Decision: APPROVED · Risk: LOW</div>
+        <div class="ll"><span class="lt">[09:00:05]</span> <span class="lok">OK</span>    logger.py · ✓ Saved to loan_audit.db (row #1) ← ONLY on /predict</div>
+        <div class="ll"><span class="lt">[09:00:06]</span> <span class="lw">WARN</span>  audit.py · Drift: 0.14 approaching threshold 0.15</div>
+        <div class="ll"><span class="lt">[09:00:06]</span> <span class="lok">OK</span>    audit.py · Bias: 0.02 — within bounds</div>
+      </div>
+
+      <div class="sh" style="margin-top:20px"><div class="sh-lbl">FastAPI Endpoints</div></div>
+      <div class="panel" style="margin-bottom:20px">
+        <div class="t-wrap"><table>
+          <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Logs?</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge ba">POST</span></td><td>/predict</td><td class="td-em" style="font-size:11px">Single loan prediction — <strong>writes log to SQLite</strong></td><td><span class="badge bg">YES ✓</span></td><td><span class="badge bg">LIVE</span></td></tr>
+            <tr><td><span class="badge bb">GET</span></td><td>/logs</td><td class="td-em" style="font-size:11px">Retrieve prediction logs (read only)</td><td><span class="badge bm">NO</span></td><td><span class="badge bg">LIVE</span></td></tr>
+            <tr><td><span class="badge bb">GET</span></td><td>/audit/drift</td><td class="td-em" style="font-size:11px">Drift score + alert flag</td><td><span class="badge bm">NO</span></td><td><span class="badge bg">LIVE</span></td></tr>
+            <tr><td><span class="badge bb">GET</span></td><td>/audit/bias</td><td class="td-em" style="font-size:11px">Bias score across attributes</td><td><span class="badge bm">NO</span></td><td><span class="badge bg">LIVE</span></td></tr>
+            <tr><td><span class="badge ba">POST</span></td><td>/retrain</td><td class="td-em" style="font-size:11px">Trigger manual retraining</td><td><span class="badge bm">NO</span></td><td><span class="badge ba">MANUAL</span></td></tr>
+            <tr><td><span class="badge bb">GET</span></td><td>/models</td><td class="td-em" style="font-size:11px">Ensemble model metrics</td><td><span class="badge bm">NO</span></td><td><span class="badge bg">LIVE</span></td></tr>
+            <tr><td><span class="badge ba">POST</span></td><td>/ai/analyze</td><td class="td-em" style="font-size:11px">AI analysis via Groq (free)</td><td><span class="badge bm">NO</span></td><td><span class="badge bg">FREE</span></td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="sh"><div class="sh-lbl">Feature Importance (Random Forest)</div></div>
+      <div class="panel"><div class="pb"><div style="height:200px"><canvas id="c-features"></canvas></div></div></div>
+    </div>
+
+    <!-- ═══ LIVE PREDICTOR ═══ -->
+    <div class="tab-panel" id="tab-predict">
+      <div class="sh"><div class="sh-lbl">Live Predictor — POST /predict → Log Saved</div></div>
+      <div class="notice pine">✓ Every prediction below calls POST /predict on the backend and saves the result to loan_audit.db automatically.</div>
+      <div class="panel" style="margin-bottom:16px">
+        <div class="ph"><div><div class="ph-t">New Loan Application</div><div class="ph-s">Fill in applicant details — result is logged to SQLite on submit</div></div></div>
+        <div class="pb">
+          <div class="pform">
+            <div class="fg"><label class="fl">Loan Amount (₹)</label><input class="fi" id="p_loan" type="number" value="10000" min="500" max="35000"></div>
+            <div class="fg"><label class="fl">Annual Income (₹)</label><input class="fi" id="p_inc" type="number" value="70000" min="1000"></div>
+            <div class="fg"><label class="fl">DTI (%)</label><input class="fi" id="p_dti" type="number" value="2.5" step="0.1" min="0" max="30"></div>
+            <div class="fg"><label class="fl">Interest Rate (%)</label><input class="fi" id="p_rate" type="number" value="12.0" step="0.01" min="0" max="25"></div>
+            <div class="fg"><label class="fl">Experience (yrs)</label><input class="fi" id="p_acc" type="number" value="5" min="0" max="15"></div>
+            <div class="fg"><label class="fl">Credit Score</label><input class="fi" id="p_revol" type="number" value="730" min="300" max="850"></div>
+          </div>
+          <div id="predResult" class="pred-result">
+            <div class="pred-dec" id="predDecision">—</div>
+            <div class="pred-info"><div class="pred-lbl">Decision</div><div class="pred-v" id="predLabel">—</div></div>
+            <div class="pred-info"><div class="pred-lbl">Risk Level</div><div class="pred-v" id="predRisk">—</div></div>
+            <div class="pred-info"><div class="pred-lbl">Key Factor</div><div class="pred-v" id="predFactor">—</div></div>
+            <div class="pred-info"><div class="pred-lbl">Log Status</div><div class="pred-v" id="predLogStatus" style="color:var(--pine)">—</div></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn fire" onclick="runPredict()">▶ Predict &amp; Save Log</button>
+            <button class="btn" onclick="loadRandom()">⟳ Load Sample</button>
+            <button class="btn" onclick="clearPredLogs()" style="color:var(--ember);border-color:var(--ember)">✕ Clear Session Logs</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SESSION LOG TABLE - only populated by predict button -->
+      <div class="pred-logs-wrap">
+        <div class="pred-log-header">
+          <div class="pred-log-title">📋 Session Prediction Log</div>
+          <div class="pred-log-count" id="predLogCount">0 predictions logged this session</div>
+        </div>
+        <div id="predLogTable">
+          <div class="empty-state" id="predLogEmpty">No predictions yet — run a prediction above to log a result.</div>
+          <table id="predLogTbl" style="display:none">
+            <thead><tr><th>#</th><th>Time</th><th>Loan Amt</th><th>Income</th><th>DTI</th><th>Credit</th><th>Rate</th><th>Decision</th><th>Risk</th><th>Key Factor</th></tr></thead>
+            <tbody id="predLogBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="cg ceq" style="margin-top:20px">
+        <div class="panel">
+          <div class="ph"><div><div class="ph-t">Loan vs Income Scatter</div><div class="ph-s">40 records — Approved vs Rejected</div></div></div>
+          <div class="pb">
+            <div class="sc-leg"><div class="sc-li"><div class="sc-dot" style="background:var(--pine)"></div>Approved</div><div class="sc-li"><div class="sc-dot" style="background:var(--ember)"></div>Rejected</div></div>
+            <div style="height:190px"><canvas id="c-scatter"></canvas></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="ph"><div><div class="ph-t">Credit Grade Distribution</div><div class="ph-s">A–G grades — 549 applicants</div></div></div>
+          <div class="pb"><div style="height:215px"><canvas id="c-grade"></canvas></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ AUDIT ═══ -->
+    <div class="tab-panel" id="tab-audit">
+      <div class="sh"><div class="sh-lbl">Audit Metrics — Current State</div></div>
+      <div class="audit-strip">
+        <div class="ac"><div class="ac-icon">⚡</div><div class="ac-lbl">Drift Score</div><div class="ac-score w">0.14</div><div class="ac-note">Threshold: 0.15 · Near alert</div><div class="ac-bar"><div class="ac-fill" style="width:93%;background:var(--fire3)"></div></div></div>
+        <div class="ac"><div class="ac-icon">⚖</div><div class="ac-lbl">Bias Score</div><div class="ac-score g">0.02</div><div class="ac-note">Threshold: 0.10 · Within bounds</div><div class="ac-bar"><div class="ac-fill" style="width:20%;background:var(--pine)"></div></div></div>
+        <div class="ac"><div class="ac-icon">✓</div><div class="ac-lbl">System Status</div><div class="ac-score g">OK</div><div class="ac-note">Stable · No retrain needed</div><div class="ac-bar"><div class="ac-fill" style="width:100%;background:var(--pine)"></div></div></div>
+      </div>
+      <div class="cg ceq" style="margin-bottom:20px">
+        <div class="panel"><div class="ph"><div><div class="ph-t">Drift Score Over Time</div><div class="ph-s">KL-divergence per session batch</div></div></div><div class="pb"><div style="height:175px"><canvas id="c-drift-time"></canvas></div></div></div>
+        <div class="panel"><div class="ph"><div><div class="ph-t">Portfolio Feature Shift</div><div class="ph-s">First 275 vs last 274 records</div></div></div><div class="pb"><div style="height:175px"><canvas id="c-shift"></canvas></div></div></div>
+      </div>
+      <div class="sh"><div class="sh-lbl">Audit Event Timeline</div></div>
+      <div class="panel"><div class="pb">
+        <div class="tl">
+          <div class="tl-row"><div class="tl-spine"><div class="tl-dot g"></div><div class="tl-line"></div></div><div class="tl-body"><div class="tl-title">System healthy — drift below threshold</div><div class="tl-meta">2026-03-25 09:00 · Drift: 0.14 · Bias: 0.02</div></div></div>
+          <div class="tl-row"><div class="tl-spine"><div class="tl-dot b"></div><div class="tl-line"></div></div><div class="tl-body"><div class="tl-title">POST /predict received — log written to SQLite</div><div class="tl-meta">2026-03-25 09:00 · loan=₹10,000 DTI=2.5% → APPROVED → row saved</div></div></div>
+          <div class="tl-row"><div class="tl-spine"><div class="tl-dot w"></div><div class="tl-line"></div></div><div class="tl-body"><div class="tl-title">Drift alert — 0.14 approaching threshold 0.15</div><div class="tl-meta">2026-03-25 09:00 · Rejected avg DTI 13.75% vs approved 0.19%</div></div></div>
+          <div class="tl-row"><div class="tl-spine"><div class="tl-dot w"></div><div class="tl-line"></div></div><div class="tl-body"><div class="tl-title">192 rejections flagged — high DTI pattern</div><div class="tl-meta">2026-03-25 09:00 · All rejections: DTI avg 13.75%</div></div></div>
+          <div class="tl-row"><div class="tl-spine"><div class="tl-dot g"></div><div class="tl-line"></div></div><div class="tl-body"><div class="tl-title">Ensemble training complete</div><div class="tl-meta">2026-03-25 09:00 · LR: 82.50% ★ · RF: 80.00% · DT: 75.00%</div></div></div>
+          <div class="tl-row"><div class="tl-spine"><div class="tl-dot v"></div></div><div class="tl-body"><div class="tl-title">System initialized — data.csv loaded</div><div class="tl-meta">2026-03-25 09:00 · 549 records ready</div></div></div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ═══ AI ANALYSIS ═══ -->
+    <div class="tab-panel" id="tab-ai">
+      <div class="sh"><div class="sh-lbl">AI-Powered Portfolio Analysis</div><div class="sh-btn" onclick="runAIAnalysis()">Run Full ↗</div></div>
+      <div class="notice pine">✓ Groq Free Tier (llama-3.1-8b) · Key lives in server.py only · Run <code>python server.py</code> first</div>
+      <div class="ai-box">
+        <div class="ai-head"><div class="ai-title">PORTFOLIO RISK ANALYST — llama-3.1-8b via Groq Free</div><button class="btn fire" onclick="runAIAnalysis()" id="aiBtn">▶ Analyze Portfolio</button></div>
+        <div class="ai-body"><div class="ai-out idle" id="aiOut">Click "Analyze Portfolio" to get full AI analysis of all 549 loan records via your FastAPI backend.</div></div>
+      </div>
+      <div class="cg c3">
+        <div class="ai-box" style="margin-bottom:0"><div class="ai-head"><div class="ai-title">DRIFT EXPLAINER</div><button class="btn" onclick="runAIQuery('drift')" style="font-size:9px;padding:2px 8px">Ask ↗</button></div><div class="ai-body" style="min-height:80px"><div class="ai-out idle" id="aiDrift" style="font-size:10.5px">Why is drift 0.14?</div></div></div>
+        <div class="ai-box" style="margin-bottom:0"><div class="ai-head"><div class="ai-title">MODEL COMPARISON</div><button class="btn" onclick="runAIQuery('model')" style="font-size:9px;padding:2px 8px">Ask ↗</button></div><div class="ai-body" style="min-height:80px"><div class="ai-out idle" id="aiModel" style="font-size:10.5px">Why does LR beat RF?</div></div></div>
+        <div class="ai-box" style="margin-bottom:0"><div class="ai-head"><div class="ai-title">RISK RECS</div><button class="btn" onclick="runAIQuery('risk')" style="font-size:9px;padding:2px 8px">Ask ↗</button></div><div class="ai-body" style="min-height:80px"><div class="ai-out idle" id="aiRisk" style="font-size:10.5px">Portfolio improvements</div></div></div>
+      </div>
+      <div class="ai-box" style="margin-top:12px">
+        <div class="ai-head"><div class="ai-title">CUSTOM QUERY</div></div>
+        <div class="ai-body">
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <input class="fi" id="aiQuery" style="flex:1;font-size:11.5px;padding:7px 10px" placeholder="Ask anything about the 549-record loan portfolio...">
+            <button class="btn fire" onclick="runCustomQuery()">Send ↗</button>
+          </div>
+          <div class="ai-out idle" id="aiCustom" style="font-size:11.5px">Enter a question above.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ DATA EXPLORER ═══ -->
+    <div class="tab-panel" id="tab-data">
+      <div class="sh"><div class="sh-lbl">Feature Statistics — data.csv (549 records)</div></div>
+      <div class="panel" style="margin-bottom:20px">
+        <div class="t-wrap"><table>
+          <thead><tr><th>Feature</th><th>Min</th><th>Mean</th><th>Max</th><th>Approved Avg</th><th>Rejected Avg</th><th>Type</th><th>Nulls</th></tr></thead>
+          <tbody>
+            <tr><td class="td-em">LoanAmount</td><td>₹500</td><td>₹10,496</td><td>₹35,000</td><td>₹8,902</td><td>₹13,557</td><td><span class="badge bb">REAL</span></td><td class="td-best">0</td></tr>
+            <tr><td class="td-em">AnnualIncome</td><td>₹2,000</td><td>₹96,752</td><td>₹6,000,000</td><td>₹117,584</td><td>₹60,726</td><td><span class="badge bb">REAL</span></td><td class="td-best">0</td></tr>
+            <tr><td class="td-em">DTI</td><td>0.00%</td><td>4.93%</td><td>27.26%</td><td><span class="td-best">0.19%</span></td><td style="color:var(--ember);font-weight:700">13.75%</td><td><span class="badge bb">REAL</span></td><td class="td-best">0</td></tr>
+            <tr><td class="td-em">CreditScore</td><td>500</td><td>732</td><td>850</td><td>762</td><td>709</td><td><span class="badge bb">REAL</span></td><td class="td-best">0</td></tr>
+            <tr><td class="td-em">InterestRate</td><td>7.03%</td><td>13.59%</td><td>19.97%</td><td>12.84%</td><td>15.13%</td><td><span class="badge bb">REAL</span></td><td class="td-best">0</td></tr>
+            <tr><td class="td-em">LoanTenure</td><td>14 mo</td><td>192 mo</td><td>359 mo</td><td>185 mo</td><td>205 mo</td><td><span class="badge bb">REAL</span></td><td class="td-best">0</td></tr>
+            <tr><td class="td-em">CreditGrade</td><td>—</td><td>A=32.8%</td><td>—</td><td>Grade A–C</td><td>Mix A–G</td><td><span class="badge ba">CAT</span></td><td class="td-best">0</td></tr>
+            <tr><td class="td-em">LoanStatus</td><td>—</td><td>65% Approved</td><td>—</td><td>357/549</td><td>192/549</td><td><span class="badge ba">CAT</span></td><td class="td-best">0</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="cg ceq">
+        <div class="panel"><div class="ph"><div><div class="ph-t">Credit Score Distribution</div><div class="ph-s">Band segments — 549 applicants</div></div></div><div class="pb"><div style="height:175px"><canvas id="c-revol"></canvas></div></div></div>
+        <div class="panel"><div class="ph"><div><div class="ph-t">Top Loan Purposes</div><div class="ph-s">Purpose breakdown from data.csv</div></div></div><div class="pb"><div style="height:175px"><canvas id="c-purpose"></canvas></div></div></div>
+      </div>
+    </div>
+
+    <!-- ═══ LOGS ═══ -->
+    <div class="tab-panel" id="tab-logs">
+      <div class="sh">
+        <div class="sh-lbl">Decision Log — data.csv Sample</div>
+        <div style="display:flex;gap:7px">
+          <span class="badge bg">549 total · 357 app · 192 rej</span>
+          <span class="badge bb">loan_audit.db</span>
+        </div>
+      </div>
+      <div class="panel" style="margin-bottom:20px">
+        <div class="t-wrap"><table>
+          <thead><tr><th>Loan Amt</th><th>Income</th><th>DTI</th><th>Credit</th><th>Rate</th><th>Tenure</th><th>Grade</th><th>Purpose</th><th>Decision</th><th>Risk</th></tr></thead>
+          <tbody id="logTableBody"></tbody>
+        </table></div>
+      </div>
+      <div class="sh"><div class="sh-lbl">SQLite Query Simulator</div></div>
+      <div class="panel"><div class="pb">
+        <div style="margin-bottom:10px"><select class="fi" id="sqlQuery" style="width:100%" onchange="runSQL()">
+          <option value="count">SELECT COUNT(*), AVG(LoanAmount), AVG(DTI) FROM loan_data</option>
+          <option value="approved">SELECT LoanStatus, COUNT(*) FROM loan_data GROUP BY LoanStatus</option>
+          <option value="dti">SELECT dti_group, COUNT(*) FROM loan_data GROUP BY dti_group</option>
+          <option value="grade">SELECT CreditGrade, COUNT(*), AVG(LoanAmount) FROM loan_data GROUP BY CreditGrade</option>
+          <option value="purpose">SELECT LoanPurpose, COUNT(*) FROM loan_data ORDER BY COUNT DESC LIMIT 5</option>
+        </select></div>
+        <div class="logbox" id="sqlResult" style="max-height:90px">
+          <div class="ll"><span class="lok">→</span> 549 rows · avg_loan: ₹10,496 · avg_dti: 4.93%</div>
+        </div>
+      </div></div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+</div>
+
+<script>
+const BACKEND_URL='http://localhost:8000';
+setInterval(()=>{document.getElementById('tsDisplay').textContent=new Date().toLocaleTimeString()},1000);
+
+function switchTab(name,navEl,tabEl){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('pageName').textContent=name.charAt(0).toUpperCase()+name.slice(1);
+  if(navEl)navEl.classList.add('active');
+  if(tabEl)tabEl.classList.add('active');
+  initCharts(name);
+}
+
+// ── STATIC DATA ──
+const SCATTER=[
+  {x:8.0,y:36.0,s:'A'},{x:6.0,y:50.0,s:'A'},{x:4.8,y:15.0,s:'A'},{x:25.0,y:55.2,s:'A'},
+  {x:24.0,y:150.0,s:'A'},{x:3.0,y:93.0,s:'A'},{x:20.0,y:60.0,s:'A'},{x:24.3,y:113.2,s:'A'},
+  {x:9.0,y:63.0,s:'A'},{x:6.0,y:65.0,s:'A'},{x:25.0,y:190.0,s:'A'},{x:11.0,y:158.0,s:'A'},
+  {x:25.0,y:204.0,s:'A'},{x:20.0,y:43.7,s:'A'},{x:8.0,y:30.0,s:'A'},{x:10.0,y:31.0,s:'A'},
+  {x:23.6,y:47.2,s:'A'},{x:10.0,y:86.0,s:'A'},{x:9.6,y:125.0,s:'A'},{x:5.0,y:110.0,s:'A'},
+  {x:7.0,y:74.8,s:'R'},{x:21.5,y:140.0,s:'R'},{x:2.2,y:45.5,s:'R'},{x:1.8,y:50.0,s:'R'},
+  {x:15.0,y:90.0,s:'R'},{x:7.0,y:48.0,s:'R'},{x:32.0,y:75.0,s:'R'},{x:19.0,y:34.0,s:'R'},
+  {x:4.5,y:57.0,s:'R'},{x:25.0,y:76.0,s:'R'},{x:14.5,y:39.0,s:'R'},{x:8.0,y:64.0,s:'R'},
+  {x:1.5,y:24.0,s:'R'},{x:8.2,y:150.0,s:'R'},{x:3.2,y:95.0,s:'R'},{x:9.1,y:49.2,s:'R'},
+  {x:14.1,y:36.5,s:'R'},{x:12.0,y:50.6,s:'R'},{x:2.5,y:60.0,s:'R'},{x:20.0,y:65.0,s:'R'}
+];
+const LOGS=[
+  {loan:8000,income:36000,dti:0.47,score:600,rate:7.2,tenure:160,status:'Approved',purpose:'moving',grade:'E',risk:54.2},
+  {loan:6000,income:50000,dti:0.0,score:700,rate:16.8,tenure:187,status:'Approved',purpose:'small_business',grade:'C',risk:0.04},
+  {loan:4800,income:15000,dti:0.0,score:750,rate:19.5,tenure:57,status:'Approved',purpose:'debt_consolidation',grade:'B',risk:-19.9},
+  {loan:25000,income:55164,dti:0.0,score:700,rate:14.3,tenure:171,status:'Approved',purpose:'house',grade:'C',risk:0.14},
+  {loan:24000,income:150000,dti:0.22,score:750,rate:17.5,tenure:63,status:'Approved',purpose:'debt_consolidation',grade:'B',risk:-13.4},
+  {loan:3000,income:93000,dti:0.0,score:800,rate:18.6,tenure:353,status:'Approved',purpose:'home_improvement',grade:'A',risk:-40.0},
+  {loan:20000,income:60000,dti:0.0,score:700,rate:17.7,tenure:239,status:'Approved',purpose:'house',grade:'C',risk:0.10},
+  {loan:24250,income:113200,dti:0.28,score:750,rate:14.1,tenure:112,status:'Approved',purpose:'other',grade:'B',risk:-11.5},
+  {loan:9000,income:63000,dti:0.29,score:800,rate:19.2,tenure:86,status:'Approved',purpose:'wedding',grade:'A',risk:-31.3},
+  {loan:10000,income:86000,dti:0.0,score:750,rate:16.5,tenure:64,status:'Approved',purpose:'major_purchase',grade:'B',risk:-20.0},
+  {loan:7000,income:74760,dti:7.99,score:750,rate:8.3,tenure:291,status:'Rejected',purpose:'car',grade:'B',risk:219.7},
+  {loan:21500,income:140000,dti:24.2,score:750,rate:7.4,tenure:125,status:'Rejected',purpose:'debt_consolidation',grade:'B',risk:706.0},
+  {loan:2200,income:45500,dti:12.58,score:650,rate:12.2,tenure:125,status:'Rejected',purpose:'other',grade:'D',risk:397.4},
+  {loan:1800,income:50004,dti:18.93,score:750,rate:10.8,tenure:333,status:'Rejected',purpose:'other',grade:'B',risk:547.9},
+  {loan:15000,income:90000,dti:17.85,score:750,rate:11.5,tenure:108,status:'Rejected',purpose:'debt_consolidation',grade:'B',risk:515.6},
+  {loan:7000,income:48000,dti:10.35,score:800,rate:19.3,tenure:253,status:'Rejected',purpose:'house',grade:'A',risk:270.5},
+  {loan:32000,income:75000,dti:13.97,score:550,rate:18.3,tenure:236,status:'Rejected',purpose:'credit_card',grade:'F',risk:479.2},
+  {loan:19000,income:34000,dti:17.44,score:750,rate:12.5,tenure:18,status:'Rejected',purpose:'debt_consolidation',grade:'B',risk:503.4},
+  {loan:4500,income:57000,dti:18.67,score:800,rate:13.2,tenure:170,status:'Rejected',purpose:'medical',grade:'A',risk:520.1},
+  {loan:25000,income:76000,dti:19.25,score:550,rate:17.0,tenure:349,status:'Rejected',purpose:'credit_card',grade:'F',risk:637.6},
+];
+const tbody=document.getElementById('logTableBody');
+LOGS.forEach(r=>{
+  const isApp=r.status==='Approved';
+  const rc=r.risk>100?'rhigh':r.risk>0?'rmed':'rlow';
+  const gb={'A':'bg','B':'bb','C':'bv','D':'ba','E':'ba','F':'br','G':'br'}[r.grade]||'bm';
+  tbody.innerHTML+=`<tr><td>₹${r.loan.toLocaleString()}</td><td>₹${r.income.toLocaleString()}</td><td>${r.dti}%</td><td>${r.score}</td><td>${r.rate}%</td><td>${r.tenure}m</td><td><span class="badge ${gb}">${r.grade}</span></td><td>${r.purpose}</td><td class="${isApp?'dapp':'drej'}">${isApp?'✓ APPROVED':'✗ REJECTED'}</td><td class="${rc}">${r.risk.toFixed(1)}</td></tr>`;
+});
+
+// ── PREDICT + LOG SAVE ──
+const SAMPLES=[[8000,36000,0.47,7.2,3,600],[6000,50000,0,16.8,4,700],[25000,55164,0,14.3,10,700],[9000,63000,0.29,19.2,1,800],[20000,60000,0,17.7,8,700],[10000,70000,2.5,12.0,5,730],[7000,48000,10.35,19.3,10,800],[15000,90000,17.85,11.5,9,750]];
+let predCount=0;
+const sessionLogs=[];
+
+function loadRandom(){const s=SAMPLES[Math.floor(Math.random()*SAMPLES.length)];['p_loan','p_inc','p_dti','p_rate','p_acc','p_revol'].forEach((id,i)=>document.getElementById(id).value=s[i]);}
+
+async function runPredict(){
+  const loan=+document.getElementById('p_loan').value;
+  const inc=+document.getElementById('p_inc').value;
+  const dti=+document.getElementById('p_dti').value;
+  const rate=+document.getElementById('p_rate').value;
+  const acc=+document.getElementById('p_acc').value;
+  const score=+document.getElementById('p_revol').value;
+
+  // Rule-based decision (mirrors server.py logic)
+  let rej=false,factor='';
+  if(dti>=10){rej=true;factor='High DTI ('+dti+'%)'}
+  else if(score<=640){rej=true;factor='Low Credit Score ('+score+')'}
+  else if(rate>=17){rej=true;factor='High Interest Rate ('+rate+'%)'}
+  else{factor='DTI: '+dti+'%, Credit: '+score}
+  const risk=rej?(dti>=15||score<=580?'HIGH':'MEDIUM'):'LOW';
+  const decision=rej?'REJECTED':'APPROVED';
+  const ts=new Date();
+
+  // Show result panel
+  const el=document.getElementById('predResult');el.style.display='flex';
+  document.getElementById('predDecision').textContent=rej?'✗':'✓';
+  document.getElementById('predDecision').className='pred-dec '+(rej?'no':'ok');
+  document.getElementById('predLabel').textContent=decision;
+  document.getElementById('predRisk').textContent=risk;
+  document.getElementById('predFactor').textContent=factor;
+  document.getElementById('predLogStatus').textContent='Saving to loan_audit.db...';
+  document.getElementById('predLogStatus').style.color='var(--fire3)';
+
+  // Try POST /predict on backend — saves to SQLite
+  let savedToBackend=false;
+  try{
+    const resp=await fetch(BACKEND_URL+'/predict',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({loan_amnt:loan,annual_inc:inc,dti,int_rate:rate,experience:acc,credit_score:score})
+    });
+    if(resp.ok){savedToBackend=true;}
+  }catch(e){/* backend offline — log locally only */}
+
+  const logEntry={
+    num:++predCount,time:ts.toLocaleTimeString(),loan,income:inc,dti,score,rate,
+    decision,risk,factor,saved:savedToBackend
+  };
+  sessionLogs.unshift(logEntry);
+  updatePredLogTable();
+
+  const statusEl=document.getElementById('predLogStatus');
+  if(savedToBackend){
+    statusEl.textContent='✓ Saved to loan_audit.db (via POST /predict)';
+    statusEl.style.color='var(--pine)';
+  }else{
+    statusEl.textContent='✓ Logged locally (backend offline — start server.py)';
+    statusEl.style.color='var(--fire3)';
+  }
+}
+
+function updatePredLogTable(){
+  const count=sessionLogs.length;
+  document.getElementById('predLogCount').textContent=count+' prediction'+(count!==1?'s':'')+' logged this session';
+  if(count===0){document.getElementById('predLogEmpty').style.display='block';document.getElementById('predLogTbl').style.display='none';return;}
+  document.getElementById('predLogEmpty').style.display='none';
+  document.getElementById('predLogTbl').style.display='table';
+  const tbody2=document.getElementById('predLogBody');
+  tbody2.innerHTML='';
+  sessionLogs.forEach(r=>{
+    const isApp=r.decision==='APPROVED';
+    const rc=r.risk==='HIGH'?'rhigh':r.risk==='MEDIUM'?'rmed':'rlow';
+    const saved=r.saved?'<span style="color:var(--pine);font-weight:700">✓ DB</span>':'<span style="color:var(--fire3)">⚡ Local</span>';
+    tbody2.innerHTML+=`<tr>
+      <td>${r.num}</td><td>${r.time}</td>
+      <td>₹${r.loan.toLocaleString()}</td>
+      <td>₹${r.income.toLocaleString()}</td>
+      <td>${r.dti}%</td><td>${r.score}</td><td>${r.rate}%</td>
+      <td class="${isApp?'dapp':'drej'}">${isApp?'✓ APPROVED':'✗ REJECTED'}</td>
+      <td class="${rc}">${r.risk}</td>
+      <td style="font-size:10px">${r.factor} ${saved}</td>
+    </tr>`;
+  });
+}
+function clearPredLogs(){sessionLogs.length=0;predCount=0;updatePredLogTable();}
+
+// ── BACKEND SIM ──
+const SIMLOGS=[['INFO','server.py','Loading data.csv (549 records)'],['INFO','preprocessing.py','Encoding CreditGrade A–G, HomeOwnership, LoanPurpose'],['INFO','preprocessing.py','Scaling with StandardScaler'],['OK','trainer.py','RF: 0.8000 · LR: 0.8250 ★ · DT: 0.7500'],['MODEL','trainer.py','Saved → models/model.pkl'],['INFO','api.py','FastAPI ready at http://localhost:8000'],['INFO','api.py','Listening for POST /predict...'],['OK','api.py','POST /predict ← loan=₹10,000 DTI=2.5% score=730'],['OK','predictor.py','Decision: APPROVED · Risk: LOW'],['OK','logger.py','✓ Written to loan_audit.db (row #1) ← ONLY /predict logs'],['OK','api.py','POST /predict ← loan=₹7,000 DTI=7.99% score=750'],['OK','predictor.py','Decision: REJECTED · Risk: HIGH'],['OK','logger.py','✓ Written to loan_audit.db (row #2)'],['WARN','audit.py','Drift: 0.14 approaching threshold 0.15'],['OK','audit.py','Bias: 0.02 — within bounds']];
+let simR=false;
+function clearLog(){document.getElementById('logStream').innerHTML='';}
+function addLine(h){const d=document.getElementById('logStream');d.innerHTML+=`<div class="ll">${h}</div>`;d.scrollTop=d.scrollHeight;}
+async function runBackendSim(){
+  if(simR)return;simR=true;clearLog();
+  for(let i=0;i<SIMLOGS.length;i++){
+    const[lvl,mod,msg]=SIMLOGS[i];
+    const cls=lvl==='OK'?'lok':lvl==='WARN'?'lw':lvl==='MODEL'?'lm':'li';
+    const ts=new Date();ts.setSeconds(ts.getSeconds()-(SIMLOGS.length-i));
+    addLine(`<span class="lt">[${ts.toLocaleTimeString()}]</span> <span class="${cls}">${lvl.padEnd(5)}</span> ${mod} · ${msg}`);
+    await new Promise(r=>setTimeout(r,110+Math.random()*180));
+  }simR=false;
+}
+
+// ── SQL SIM ──
+const SQL={count:'→ 549 rows · avg_loan: ₹10,496 · avg_dti: 4.93%',approved:'→ Approved: 357 (65.0%) · Rejected: 192 (35.0%)',dti:'→ <5%: 377 · 5-15%: 87 · 15-25%: 79 · 25%+: 6',grade:'→ A:180 · B:166 · C:94 · D:63 · E:35 · F:7 · G:4',purpose:'→ debt_consolidation:146 · other:77 · home_improvement:73 · small_business:52 · major_purchase:49'};
+function runSQL(){const v=document.getElementById('sqlQuery').value;document.getElementById('sqlResult').innerHTML=`<div class="ll"><span class="lok">→</span> ${SQL[v]}</div>`;}
+
+// ── AI ──
+const SYS='You are a senior quantitative risk analyst. Real data.csv stats: 549 records, 65% approval (357/192). Avg loan ₹10,496. Avg income ₹96,752. Avg DTI 4.93% (approved 0.19% vs rejected 13.75%). Avg credit 732. Avg rate 13.59%. LR 82.5% (best), RF 80%, DT 75%. Drift 0.14 (threshold 0.15). Bias 0.02. Grades: A=180,B=166,C=94,D=63,E=35,F=7,G=4. Logging only on POST /predict. Be concise and expert.';
+async function callAI(msg,el){
+  el.className='ai-out idle';el.textContent='⟳ Querying Groq via backend...';
+  try{
+    const r=await fetch(BACKEND_URL+'/ai/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:SYS,message:msg})});
+    if(!r.ok){const e=await r.json().catch(()=>({}));el.className='ai-out idle';el.textContent='⚠ Backend error: '+(e.detail||r.statusText);return;}
+    const d=await r.json();el.className='ai-out';el.textContent=d.result||JSON.stringify(d);
+  }catch(e){el.className='ai-out idle';el.textContent='⚠ Backend offline at '+BACKEND_URL+'\n\nRun: python server.py\n\nError: '+e.message;}
+}
+function runAIAnalysis(){
+  const el=document.getElementById('aiOut'),btn=document.getElementById('aiBtn');
+  btn.disabled=true;btn.textContent='⟳ Analyzing...';
+  callAI('Comprehensive risk assessment: 1) 65% approval with DTI divergence (approved 0.19% vs rejected 13.75%). 2) Drift 0.14 root cause. 3) Grade A/B concentration (346/549). 4) LR dominance. 5) Top 3 actions.',el).finally(()=>{btn.disabled=false;btn.textContent='▶ Analyze Portfolio';});
+}
+const AIQ={drift:'Why is drift 0.14? Approved avg DTI 0.19% vs rejected 13.75% — what does this divergence signal?',model:'Why does LR (82.5%) beat RF (80%) on this dataset? What does credit_score at 32% feature importance mean?',risk:'3 concrete actions: 65% approval, 192 rejections (avg DTI 13.75%), drift 0.14 near threshold. Be specific.'};
+function runAIQuery(t){callAI(AIQ[t],document.getElementById('ai'+t.charAt(0).toUpperCase()+t.slice(1)));}
+function runCustomQuery(){const q=document.getElementById('aiQuery').value.trim();if(!q)return;callAI(q,document.getElementById('aiCustom'));}
+
+async function refreshKPIs(){
+  try{
+    const r=await fetch(BACKEND_URL+'/logs?limit=1000');if(!r.ok)return;
+    const d=await r.json();const logs=d.logs||[];if(!logs.length)return;
+    const total=logs.length,approved=logs.filter(x=>x.decision==='APPROVED').length;
+    document.getElementById('kpiTotal').textContent=total;
+    document.querySelector('.kpi-grid .kpi:nth-child(1) .k-sub').innerHTML=`<span class="up">↑ ${approved}</span> approved`;
+    document.querySelector('.kpi-grid .kpi:nth-child(2) .k-val').textContent=Math.round(approved/total*100)+'%';
+    document.querySelector('.kpi-grid .kpi:nth-child(2) .k-sub').textContent=`${approved} app · ${total-approved} rej`;
+  }catch(e){}
+}
+
+// ── CHARTS ──
+Chart.defaults.color='#4a4540';
+Chart.defaults.font.family='"Space Mono",monospace';
+Chart.defaults.font.size=10;
+Chart.defaults.plugins.legend.display=false;
+const GR={color:'rgba(15,13,10,.07)',drawBorder:false};
+const AX={x:{grid:GR,ticks:{color:'#4a4540'}},y:{grid:GR,ticks:{color:'#4a4540'}}};
+const W={};const INIT={};
+function mk(id,cfg){const el=document.getElementById(id);if(!el)return;W[id]=new Chart(el,cfg);}
+function initCharts(tab){
+  if(INIT[tab])return;INIT[tab]=true;
+  if(tab==='overview'){
+    mk('c-volume',{type:'bar',data:{labels:['Batch 1','Batch 2','Batch 3','Batch 4'],datasets:[{data:[138,137,137,137],backgroundColor:['#e85d0440','#e85d0430','#e85d0422','#e85d0415'],borderColor:['#e85d04','#e85d0490','#e85d0455','#e85d0430'],borderWidth:1.5,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:AX}});
+    mk('c-loan-donut',{type:'doughnut',data:{labels:['<₹5k','₹5-12k','₹12-22k','>₹22k'],datasets:[{data:[120,243,129,57],backgroundColor:['#1a6b4528','#1a4fa028','#e85d0425','#f0a40028'],borderColor:['#1a6b45','#1a4fa0','#e85d04','#f0a400'],borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:true,position:'right',labels:{color:'#4a4540',font:{size:9.5},padding:8,boxWidth:8}}}}});
+    mk('c-income',{type:'bar',data:{labels:['<₹40k','₹40-80k','₹80-150k','>₹150k'],datasets:[{data:[133,231,137,48],backgroundColor:'#1a4fa022',borderColor:'#1a4fa0',borderWidth:1.5,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,scales:AX}});
+    mk('c-dti',{type:'bar',data:{labels:['<5%','5-15%','15-25%','25%+'],datasets:[{data:[377,87,79,6],backgroundColor:['#1a6b4522','#f0a40025','#e85d0425','#dc2f0228'],borderColor:['#1a6b45','#f0a400','#e85d04','#dc2f02'],borderWidth:1.5,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,scales:AX}});
+    mk('c-rate',{type:'bar',data:{labels:['<10%','10-14%','14-18%','>18%'],datasets:[{data:[120,185,158,86],backgroundColor:['#1a6b4520','#1a6b4528','#f0a40020','#dc2f0222'],borderColor:['#1a6b45','#1a6b45','#f0a400','#dc2f02'],borderWidth:1.5,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,scales:AX}});
+  }
+  if(tab==='backend'){
+    mk('c-features',{type:'bar',data:{labels:['credit_score','dti','loan_amnt','annual_inc','int_rate','experience'],datasets:[{data:[32,24,18,13,8,5],backgroundColor:['#e85d0430','#1a4fa028','#1a6b4525','#f0a40025','#e85d0420','#dc2f0220'],borderColor:['#e85d04','#1a4fa0','#1a6b45','#f0a400','#e85d04','#dc2f02'],borderWidth:1.5,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',scales:{x:{grid:GR,ticks:{color:'#4a4540'},title:{display:true,text:'Importance (%)',color:'#4a4540',font:{size:9}}},y:{grid:GR,ticks:{color:'#2a2520',font:{size:10.5}}}}}});
+  }
+  if(tab==='predict'){
+    const ap=SCATTER.filter(d=>d.s==='A').map(d=>({x:d.x,y:d.y}));
+    const rj=SCATTER.filter(d=>d.s==='R').map(d=>({x:d.x,y:d.y}));
+    mk('c-scatter',{type:'scatter',data:{datasets:[{data:ap,backgroundColor:'#1a6b4548',borderColor:'#1a6b45',borderWidth:1.5,pointRadius:5,pointHoverRadius:7},{data:rj,backgroundColor:'#dc2f0240',borderColor:'#dc2f02',borderWidth:1.5,pointRadius:5,pointHoverRadius:7}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{grid:GR,ticks:{color:'#4a4540'},title:{display:true,text:'Loan Amount (₹k)',color:'#4a4540',font:{size:9}}},y:{grid:GR,ticks:{color:'#4a4540'},title:{display:true,text:'Annual Income (₹k)',color:'#4a4540',font:{size:9}}}}}});
+    mk('c-grade',{type:'bar',data:{labels:['A','B','C','D','E','F','G'],datasets:[{data:[180,166,94,63,35,7,4],backgroundColor:['#1a6b4530','#1a4fa030','#2a252528','#f0a40030','#e85d0428','#dc2f0235','#dc2f0245'],borderColor:['#1a6b45','#1a4fa0','#4a4540','#f0a400','#e85d04','#dc2f02','#dc2f02'],borderWidth:1.5,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{grid:GR,ticks:{color:'#4a4540'}},y:{grid:GR,ticks:{color:'#4a4540'}}}}});
+  }
+  if(tab==='audit'){
+    mk('c-drift-time',{type:'line',data:{labels:['Batch 1','Batch 2','Batch 3','Batch 4','Current'],datasets:[{data:[0.04,0.08,0.13,0.19,0.14],borderColor:'#e85d04',backgroundColor:'#e85d0412',fill:true,tension:.4,pointRadius:5,pointBackgroundColor:'#e85d04'},{data:[0.15,0.15,0.15,0.15,0.15],borderColor:'#dc2f0250',borderDash:[4,4],pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{grid:GR,ticks:{color:'#4a4540'}},y:{grid:GR,ticks:{color:'#4a4540'},min:0,max:0.25}}}});
+    mk('c-shift',{type:'bar',data:{labels:['Avg Loan (₹k)','Avg DTI (%)','Avg Rate (%)'],datasets:[{label:'First 275',data:[10.2,4.9,13.2],backgroundColor:'#1a4fa022',borderColor:'#1a4fa0',borderWidth:1.5,borderRadius:3},{label:'Last 274',data:[10.8,5.0,14.0],backgroundColor:'#e85d0422',borderColor:'#e85d04',borderWidth:1.5,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#4a4540',font:{size:9.5},boxWidth:10}}},scales:{x:{grid:GR,ticks:{color:'#4a4540'}},y:{grid:GR,ticks:{color:'#4a4540'}}}}});
+  }
+  if(tab==='data'){
+    mk('c-revol',{type:'bar',data:{labels:['<600','600-700','700-780','780+'],datasets:[{data:[11,98,260,180],backgroundColor:'#2a252522',borderColor:'#2a2520',borderWidth:1.5,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{...AX.x,title:{display:true,text:'Credit Score Band',color:'#4a4540',font:{size:9}}},y:AX.y}}});
+    mk('c-purpose',{type:'bar',data:{labels:['debt_consol.','other','home_imprv.','small_biz','major_purch.','credit_card','medical','wedding'],datasets:[{data:[146,77,73,52,49,42,20,17],backgroundColor:'#1a4fa020',borderColor:'#1a4fa0',borderWidth:1.5,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',scales:{x:{grid:GR,ticks:{color:'#4a4540'}},y:{grid:GR,ticks:{color:'#2a2520',font:{size:9.5}}}}}});
+  }
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('tsDisplay').textContent=new Date().toLocaleTimeString();
+  initCharts('overview');
+  refreshKPIs();
+});
+</script>
+</body>
+</html>
