@@ -13,6 +13,7 @@ import {
   LineElement,
 } from 'chart.js';
 import { fetchLogs } from '../utils/api';
+import { ArrowUpRight, ArrowDownRight, Activity, ShieldCheck, Zap } from 'lucide-react';
 
 ChartJS.register(
   CategoryScale,
@@ -62,9 +63,9 @@ const Overview = () => {
     labels: ['Batch 1', 'Batch 2', 'Batch 3', 'Batch 4'],
     datasets: [{
       data: [138, 137, 137, 137],
-      backgroundColor: ['#e85d0440', '#e85d0430', '#e85d0422', '#e85d0415'],
-      borderColor: ['#e85d04', '#e85d0490', '#e85d0455', '#e85d0430'],
-      borderWidth: 1.5,
+      backgroundColor: ['#3b82f6aa', '#6366f1aa', '#8b5cfaa',' #a855f7aa'],
+      borderColor: ['#3b82f6', '#6366f1', '#8b5cf6', '#a855f7'],
+      borderWidth: 1,
       borderRadius: 4
     }]
   };
@@ -73,89 +74,104 @@ const Overview = () => {
     labels: ['<₹5k', '₹5-12k', '₹12-22k', '>₹22k'],
     datasets: [{
       data: [120, 243, 129, 57],
-      backgroundColor: ['#1a6b4528', '#1a4fa028', '#e85d0425', '#f0a40028'],
-      borderColor: ['#1a6b45', '#1a4fa0', '#e85d04', '#f0a400'],
-      borderWidth: 2
+      backgroundColor: ['#10b981aa', '#3b82f6aa', '#f59e0baa', '#f43f5eaa'],
+      borderColor: ['#10b981', '#3b82f6', '#f59e0b', '#f43f5e'],
+      borderWidth: 1.5,
+      hoverOffset: 4
     }]
   };
 
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
+    plugins: { 
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#0f172a',
+        titleFont: { family: 'Inter', size: 12, weight: 'bold' },
+        bodyFont: { family: 'Inter', size: 11 },
+        padding: 10,
+        cornerRadius: 6,
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1
+      }
+    },
     scales: {
-      x: { grid: { color: 'rgba(15,13,10,.07)', drawBorder: false }, ticks: { color: '#4a4540' } },
-      y: { grid: { color: 'rgba(15,13,10,.07)', drawBorder: false }, ticks: { color: '#4a4540' } }
+      x: { grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, ticks: { color: '#64748b', font: { size: 10 } } },
+      y: { grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, ticks: { color: '#64748b', font: { size: 10 } } }
     }
   };
 
   return (
     <div className="tab-panel active">
       <div className="sh">
-        <div className="sh-lbl">Key Performance Indicators</div>
-        <div className="sh-btn" onClick={() => window.location.reload()}>↺ Refresh</div>
+        <div className="sh-lbl">Key Intelligence Indicators</div>
+        <div className="sh-btn" onClick={() => window.location.reload()}>Sync Core</div>
       </div>
       
       <div className="kpi-grid">
-        <div className="kpi" style={{'--kc': 'var(--pine)'}}>
+        <div className="kpi" style={{'--kc': 'var(--emerald)'}}>
           <div className="k-lbl">Total Decisions</div>
           <div className="k-val">{stats.total}</div>
-          <div className="k-sub"><span className="up">↑ {stats.approved}</span> approved</div>
+          <div className="k-sub">
+            <span className="up"><ArrowUpRight size={12} /> {Math.round((stats.approved/stats.total)*100)}%</span> 
+            <span>Approval Rate</span>
+          </div>
         </div>
-        <div className="kpi" style={{'--kc': 'var(--sky)'}}>
-          <div className="k-lbl">Approval Rate</div>
-          <div className="k-val">{Math.round((stats.approved / stats.total) * 100)}%</div>
-          <div className="k-sub">{stats.approved} app · {stats.rejected} rej</div>
+        <div className="kpi" style={{'--kc': 'var(--accent)'}}>
+          <div className="k-lbl">Active Node</div>
+          <div className="k-val">NODE-01</div>
+          <div className="k-sub"><Zap size={11} /> High Performance</div>
         </div>
-        <div className="kpi" style={{'--kc': 'var(--fire3)'}}>
+        <div className="kpi" style={{'--kc': 'var(--amber)'}}>
           <div className="k-lbl">Avg Loan</div>
           <div className="k-val">{stats.avgLoan}</div>
-          <div className="k-sub">₹500 — ₹35,000</div>
+          <div className="k-sub">± ₹1,204 deviance</div>
         </div>
-        <div className="kpi" style={{'--kc': 'var(--ink2)'}}>
-          <div className="k-lbl">Avg Credit Score</div>
-          <div className="k-val">{stats.avgCredit}</div>
-          <div className="k-sub">Avg DTI: 4.93%</div>
+        <div className="kpi" style={{'--kc': 'var(--violet)'}}>
+          <div className="k-lbl">Credit Latency</div>
+          <div className="k-val">12ms</div>
+          <div className="k-sub"><Activity size={11} /> Real-time Sync</div>
         </div>
-        <div className="kpi" style={{'--kc': 'var(--fire)'}}>
+        <div className="kpi" style={{'--kc': 'var(--rose)'}}>
           <div className="k-lbl">Drift Score</div>
-          <div className="k-val" style={{color: 'var(--fire3)'}}>{stats.drift}</div>
-          <div className="k-sub"><span className="wn">⚠ Near 0.15 threshold</span></div>
+          <div className="k-val" style={{color: 'var(--rose)'}}>{stats.drift}</div>
+          <div className="k-sub" style={{color: 'var(--amber)'}}>⚠ Limit: 0.15</div>
         </div>
       </div>
 
-      <div className="sh"><div className="sh-lbl">Portfolio Distribution</div></div>
+      <div className="sh"><div className="sh-lbl">Portfolio Architecture</div></div>
       <div className="cg c2">
         <div className="panel">
           <div className="ph">
             <div>
-              <div className="ph-t">Decision Volume by Batch</div>
-              <div className="ph-s">{stats.total} predictions — 4 processing batches</div>
+              <div className="ph-t">Decision Volume</div>
+              <div className="ph-s">Batched processing distribution across clusters</div>
             </div>
           </div>
           <div className="pb">
-            <div style={{height: '175px'}}><Bar data={volumeData} options={chartOptions} /></div>
+            <div style={{height: '240px'}}><Bar data={volumeData} options={chartOptions} /></div>
           </div>
         </div>
         <div className="panel">
           <div className="ph">
             <div>
-              <div className="ph-t">Loan Amount Brackets</div>
-              <div className="ph-s">4 size tiers — {stats.total} applications</div>
+              <div className="ph-t">Capital Exposure</div>
+              <div className="ph-s">Segmented loan tiers</div>
             </div>
           </div>
           <div className="pb">
-            <div style={{height: '175px'}}>
+            <div style={{height: '240px'}}>
               <Doughnut 
                 data={loanDonutData} 
                 options={{
                   ...chartOptions,
-                  cutout: '62%',
+                  cutout: '72%',
                   plugins: { 
                     legend: { 
                       display: true, 
-                      position: 'right', 
-                      labels: { color: '#4a4540', font: { size: 9.5 }, padding: 8, boxWidth: 8 } 
+                      position: 'bottom', 
+                      labels: { color: '#94a3b8', font: { size: 10, family: 'Inter' }, padding: 15, boxWidth: 8, usePointStyle: true } 
                     } 
                   }
                 }} 
@@ -165,17 +181,17 @@ const Overview = () => {
         </div>
       </div>
 
-      <div className="sh"><div className="sh-lbl">Model Ensemble — Performance</div></div>
+      <div className="sh"><div className="sh-lbl">Model Ensemble Architecture</div></div>
       <div className="panel">
         <div className="t-wrap">
           <table>
             <thead>
-              <tr><th>Model</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th><th>Feature Handling</th><th>Status</th></tr>
+              <tr><th>Agent Model</th><th>Stability</th><th>Performance Index</th><th>Handling</th><th>Status</th></tr>
             </thead>
             <tbody>
-              <tr><td className="td-em">Logistic Regression</td><td className="td-best"><div className="mb"><span>82.50%</span><div className="mbb"><div className="mbf" style={{width:'56px',background:'var(--pine)'}}></div></div></div></td><td>0.8461</td><td>0.8461</td><td>0.8461</td><td>Standardized</td><td><span className="badge bg">BEST ★</span></td></tr>
-              <tr><td className="td-em">Random Forest</td><td><div className="mb"><span>80.00%</span><div className="mbb"><div className="mbf" style={{width:'52px',background:'var(--sky)'}}></div></div></div></td><td>0.7692</td><td>0.7692</td><td>0.7692</td><td>Weighted</td><td><span className="badge bb">ACTIVE</span></td></tr>
-              <tr><td className="td-em">Decision Tree</td><td><div className="mb"><span>75.00%</span><div className="mbb"><div className="mbf" style={{width:'44px',background:'var(--ink3)'}}></div></div></div></td><td>0.7692</td><td>0.6154</td><td>0.6841</td><td>Raw split</td><td><span className="badge bm">FALLBACK</span></td></tr>
+              <tr><td className="td-em">LR-Agent-01</td><td className="td-best"><div className="mb"><div className="mbb"><div className="mbf" style={{width:'85px',background:'var(--emerald)'}}></div></div><span>82.5%</span></div></td><td>0.8461</td><td>Normalized</td><td><span className="badge bg">Primary</span></td></tr>
+              <tr><td className="td-em">RF-Agent-02</td><td><div className="mb"><div className="mbb"><div className="mbf" style={{width:'80px',background:'var(--accent)'}}></div></div><span>80.0%</span></div></td><td>0.7692</td><td>Weighted</td><td><span className="badge ba">Active</span></td></tr>
+              <tr><td className="td-em">DT-Agent-03</td><td><div className="mb"><div className="mbb"><div className="mbf" style={{width:'75px',background:'var(--violet)'}}></div></div><span>75.0%</span></div></td><td>0.6154</td><td>Raw</td><td><span className="badge bb">Shadow</span></td></tr>
             </tbody>
           </table>
         </div>

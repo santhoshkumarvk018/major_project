@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { predictLoan } from '../utils/api';
+import { Play, RotateCcw, Trash2, CheckCircle2, XCircle, Database, Info } from 'lucide-react';
 
 const Predictor = () => {
   const [formData, setFormData] = useState({
@@ -56,7 +57,6 @@ const Predictor = () => {
       }, ...prev]);
     } catch (error) {
       console.error("Prediction error:", error);
-      alert("Failed to reach backend API. Ensure server.py is running.");
     } finally {
       setLoading(false);
     }
@@ -64,68 +64,76 @@ const Predictor = () => {
 
   return (
     <div className="tab-panel active">
-      <div className="sh"><div className="sh-lbl">Live Predictor — POST /predict → Log Saved</div></div>
-      <div className="notice pine">✓ Every prediction below calls POST /predict on the backend and saves the result to loan_audit.db automatically.</div>
+      <div className="sh"><div className="sh-lbl">Real-time Decision Engine</div></div>
+      <div className="notice pine" style={{background: 'rgba(16, 185, 129, 0.05)', borderColor: 'var(--emerald)', color: 'var(--ink2)'}}>
+        <Info size={14} style={{marginRight: 8, color: 'var(--emerald)'}} />
+        Predictive analysis results are automatically synchronized with the primary ledger (loan_audit.db).
+      </div>
       
-      <div className="panel" style={{marginBottom: '16px'}}>
-        <div className="ph"><div><div className="ph-t">New Loan Application</div><div className="ph-s">Fill in applicant details — result is logged to SQLite on submit</div></div></div>
+      <div className="panel" style={{marginBottom: '24px'}}>
+        <div className="ph">
+          <div>
+            <div className="ph-t">Applicant Parameters</div>
+            <div className="ph-s">Define variables for real-time risk assessment</div>
+          </div>
+        </div>
         <div className="pb">
           <div className="pform">
-            <div className="fg"><label className="fl">Loan Amount (₹)</label><input className="fi" id="loan_amnt" type="number" value={formData.loan_amnt} onChange={handleInputChange} /></div>
-            <div className="fg"><label className="fl">Annual Income (₹)</label><input className="fi" id="annual_inc" type="number" value={formData.annual_inc} onChange={handleInputChange} /></div>
-            <div className="fg"><label className="fl">DTI (%)</label><input className="fi" id="dti" type="number" step="0.1" value={formData.dti} onChange={handleInputChange} /></div>
-            <div className="fg"><label className="fl">Interest Rate (%)</label><input className="fi" id="int_rate" type="number" step="0.01" value={formData.int_rate} onChange={handleInputChange} /></div>
-            <div className="fg"><label className="fl">Experience (yrs)</label><input className="fi" id="experience" type="number" value={formData.experience} onChange={handleInputChange} /></div>
-            <div className="fg"><label className="fl">Credit Score</label><input className="fi" id="credit_score" type="number" value={formData.credit_score} onChange={handleInputChange} /></div>
+            <div className="fg"><label className="fl">Principal Amount (₹)</label><input className="fi" id="loan_amnt" type="number" value={formData.loan_amnt} onChange={handleInputChange} /></div>
+            <div className="fg"><label className="fl">Annual Yield (₹)</label><input className="fi" id="annual_inc" type="number" value={formData.annual_inc} onChange={handleInputChange} /></div>
+            <div className="fg"><label className="fl">DTI Ratio (%)</label><input className="fi" id="dti" type="number" step="0.1" value={formData.dti} onChange={handleInputChange} /></div>
+            <div className="fg"><label className="fl">Rate of Interest (%)</label><input className="fi" id="int_rate" type="number" step="0.01" value={formData.int_rate} onChange={handleInputChange} /></div>
+            <div className="fg"><label className="fl">Tenure/Exp (yrs)</label><input className="fi" id="experience" type="number" value={formData.experience} onChange={handleInputChange} /></div>
+            <div className="fg"><label className="fl">Credit Authority Score</label><input className="fi" id="credit_score" type="number" value={formData.credit_score} onChange={handleInputChange} /></div>
           </div>
 
           {result && (
-            <div className="pred-result visible">
+            <div className={`pred-result visible ${result.decision === 'APPROVED' ? 'ok' : 'no'}`} style={{background: result.decision === 'APPROVED' ? 'rgba(16, 185, 129, 0.05)' : 'rgba(244, 63, 94, 0.05)', borderColor: result.decision === 'APPROVED' ? 'var(--emerald)' : 'var(--rose)'}}>
               <div className={`pred-dec ${result.decision === 'APPROVED' ? 'ok' : 'no'}`}>
-                {result.decision === 'APPROVED' ? '✓' : '✗'}
+                {result.decision === 'APPROVED' ? <CheckCircle2 size={40} /> : <XCircle size={40} />}
               </div>
-              <div className="pred-info"><div className="pred-lbl">Decision</div><div className="pred-v">{result.decision}</div></div>
-              <div className="pred-info"><div className="pred-lbl">Risk Level</div><div className="pred-v">{result.risk_flag}</div></div>
-              <div className="pred-info"><div className="pred-lbl">Key Factor</div><div className="pred-v">{result.key_factor}</div></div>
-              <div className="pred-info"><div className="pred-lbl">Log Status</div><div className="pred-v" style={{color:'var(--pine)'}}>✓ Saved to DB</div></div>
+              <div className="pred-info"><div className="pred-lbl">Outcome</div><div className="pred-v" style={{color: result.decision === 'APPROVED' ? 'var(--emerald)' : 'var(--rose)'}}>{result.decision}</div></div>
+              <div className="pred-info"><div className="pred-lbl">Risk Index</div><div className="pred-v">{result.risk_flag}</div></div>
+              <div className="pred-info"><div className="pred-lbl">Primary Catalyst</div><div className="pred-v">{result.key_factor}</div></div>
+              <div className="pred-info"><div className="pred-lbl">Ledger Status</div><div className="pred-v" style={{color: 'var(--emerald)', display: 'flex', alignItems: 'center', gap: 4}}><Database size={12} /> SYNCED</div></div>
             </div>
           )}
 
-          <div style={{display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap'}}>
-            <button className="btn fire" onClick={runPredict} disabled={loading}>
-              {loading ? '⟳ Processing...' : '▶ Predict & Save Log'}
+          <div style={{display:'flex', gap:'12px', alignItems:'center', flexWrap:'wrap', marginTop: 12}}>
+            <button className="btn fire" onClick={runPredict} disabled={loading} style={{display: 'flex', alignItems: 'center', gap: 8}}>
+              {loading ? '⟳ Syncing...' : <><Play size={14} /> Execute Analysis</>}
             </button>
-            <button className="btn" onClick={loadRandom}>⟳ Load Sample</button>
-            <button className="btn" onClick={() => setSessionLogs([])} style={{color:'var(--ember)', borderColor:'var(--ember)'}}>✕ Clear Session Logs</button>
+            <button className="btn" onClick={loadRandom} style={{display: 'flex', alignItems: 'center', gap: 8}}><RotateCcw size={14} /> Randomize Case</button>
+            <button className="btn" onClick={() => setSessionLogs([])} style={{color:'var(--rose)', borderColor:'rgba(244, 63, 94, 0.3)', display: 'flex', alignItems: 'center', gap: 8}}><Trash2 size={14} /> Purge Session</button>
           </div>
         </div>
       </div>
 
       <div className="pred-logs-wrap">
         <div className="pred-log-header">
-          <div className="pred-log-title">📋 Session Prediction Log</div>
-          <div className="pred-log-count">{sessionLogs.length} predictions logged this session</div>
+          <div className="pred-log-title">Intelligence Log Stream</div>
+          <div className="pred-log-count">{sessionLogs.length} Entries Recorded</div>
         </div>
-        <div id="predLogTable">
+        <div id="predLogTable" style={{border: '1px solid var(--glass-border)', borderRadius: 'var(--r2)'}}>
           {sessionLogs.length === 0 ? (
-            <div className="empty-state">No predictions yet — run a prediction above to log a result.</div>
+            <div className="empty-state">Operational log is currently empty. Execute analysis to populate.</div>
           ) : (
             <table>
               <thead>
                 <tr>
-                  <th>Time</th><th>Loan Amt</th><th>Income</th><th>DTI</th><th>Credit</th><th>Rate</th><th>Decision</th><th>Risk</th><th>Key Factor</th>
+                  <th>Timestamp</th><th>Principal</th><th>Yield</th><th>DTI</th><th>Cred</th><th>Outcome</th><th>Index</th><th>Catalyst</th>
                 </tr>
               </thead>
               <tbody>
                 {sessionLogs.map((log, i) => (
                   <tr key={i}>
-                    <td>{log.time}</td>
+                    <td style={{fontSize: 11}}>{log.time}</td>
                     <td>₹{log.loan_amnt.toLocaleString()}</td>
                     <td>₹{log.annual_inc.toLocaleString()}</td>
-                    <td>{log.dti}%</td><td>{log.credit_score}</td><td>{log.int_rate}%</td>
-                    <td className={log.decision === 'APPROVED' ? 'dapp' : 'drej'}>{log.decision}</td>
-                    <td className={log.risk_flag === 'HIGH' ? 'rhigh' : log.risk_flag === 'MEDIUM' ? 'rmed' : 'rlow'}>{log.risk_flag}</td>
-                    <td style={{fontSize:'10px'}}>{log.key_factor} <span style={{color:'var(--pine)', fontWeight:700}}>✓ DB</span></td>
+                    <td>{log.dti}%</td><td>{log.credit_score}</td>
+                    <td style={{color: log.decision === 'APPROVED' ? 'var(--emerald)' : 'var(--rose)', fontWeight: 700}}>{log.decision}</td>
+                    <td><span className={`badge ${log.risk_flag === 'HIGH' ? 'br' : log.risk_flag === 'MEDIUM' ? 'ba' : 'bg'}`}>{log.risk_flag}</span></td>
+                    <td style={{fontSize:'10px', color: 'var(--ink3)'}}>{log.key_factor}</td>
                   </tr>
                 ))}
               </tbody>

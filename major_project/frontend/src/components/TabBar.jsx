@@ -4,10 +4,10 @@ const TabBar = ({ activeTab, setActiveTab }) => {
   const tabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'backend', label: 'Backend' },
-    { id: 'predict', label: 'Predictor' },
+    { id: 'predict', label: 'Live' },
     { id: 'audit', label: 'Audit' },
-    { id: 'ai', label: 'AI Analysis' },
-    { id: 'data', label: 'Data' },
+    { id: 'ai', label: 'AI Review' },
+    { id: 'data', label: 'Explorer' },
     { id: 'logs', label: 'Logs' },
   ]
 

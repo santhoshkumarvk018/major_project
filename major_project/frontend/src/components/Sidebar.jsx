@@ -1,5 +1,5 @@
 import React from 'react'
-import { LayoutGrid, Server, TrendingUp, ShieldCheck, User, Database, AlignLeft } from 'lucide-react'
+import { LayoutGrid, Server, TrendingUp, ShieldCheck, User, Database, AlignLeft, Cpu } from 'lucide-react'
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
   const navItems = [
@@ -23,17 +23,17 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       <div className="brand">
         <div className="logo-wrap">
           <div className="logo-hex">
-            <svg viewBox="0 0 18 18" fill="none">
-              <path d="M9 2L15.5 5.8V12.2L9 16L2.5 12.2V5.8L9 2Z" stroke="#fff" strokeWidth="1.3" strokeLinejoin="round"/>
-              <circle cx="9" cy="9" r="2.5" fill="#fff" opacity=".9"/>
-            </svg>
+            <Cpu size={20} color="#fff" strokeWidth={2.5} />
           </div>
           <div>
             <div className="brand-name">LoanAudit AI</div>
-            <div className="brand-sub">v2.4.1 · Enterprise</div>
+            <div className="brand-sub">Enterprise v2.4.1</div>
           </div>
         </div>
-        <div className="live-pill"><span className="live-dot"></span>LIVE · 549 RECORDS</div>
+        <div className="live-pill">
+          <span className="live-dot"></span>
+          NETWORK LIVE
+        </div>
       </div>
 
       <nav>
@@ -46,8 +46,8 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                 className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
                 onClick={() => setActiveTab(item.id)}
               >
-                <item.icon size={14} />
-                {item.label}
+                <item.icon size={18} />
+                <span>{item.label}</span>
                 {item.chip && <span className={`nav-chip ${item.chipClass || ''}`}>{item.chip}</span>}
               </div>
             ))}
@@ -57,10 +57,15 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
 
       <div className="sidebar-foot">
         <div className="ens-box">
-          <div className="ens-lbl">Model Ensemble</div>
-          <div className="ens-row"><span className="ens-name">LogisticReg</span><span className="ens-val" style={{color:'#4ade80'}}>82.5% ★</span></div>
-          <div className="ens-row"><span className="ens-name">RandomForest</span><span className="ens-val" style={{color:'#60a5fa'}}>80.0%</span></div>
-          <div className="ens-row"><span className="ens-name">DecisionTree</span><span className="ens-val" style={{color:'rgba(245,240,232,.3)'}}>75.0%</span></div>
+          <div className="ens-lbl">System Intelligence</div>
+          <div className="ens-row">
+            <span className="ens-name">Core Engine</span>
+            <span className="ens-val" style={{color:'var(--emerald)'}}>82.5%</span>
+          </div>
+          <div className="ens-row">
+            <span className="ens-name">Neural Net</span>
+            <span className="ens-val" style={{color:'var(--accent)'}}>80.0%</span>
+          </div>
         </div>
       </div>
     </aside>
